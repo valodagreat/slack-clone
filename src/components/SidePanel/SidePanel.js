@@ -18,7 +18,7 @@ function SidePanel() {
         >
             <UserPanel />
             <Channels currentUser={currentUser}  />
-            <DirectMessages />
+            <DirectMessages currentUser={currentUser} />
         </Menu>
     )
 }
