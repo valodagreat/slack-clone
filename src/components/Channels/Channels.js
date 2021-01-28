@@ -154,8 +154,8 @@ function Channels() {
         })
         if(count > 0) return count
     }
-    const getTrue = () => {
-        return notifications.find(notification =>notification.id === channel.id )
+    const getTrue = (channele) => {
+        return channele.id === channel.id 
     }
 
     const displayChannels = (channels) => {
@@ -168,7 +168,7 @@ function Channels() {
                     style={{ opacity: 0.7 }}
                     active={channel.id === activeChannel}
                 >
-                    {getNotificationCount(channel) && !getTrue() &&(
+                    {getNotificationCount(channel) && !getTrue(channel) &&(
                         <Label color="red">{getNotificationCount(channel)}</Label>
                     )}
                     # {channel.name}
