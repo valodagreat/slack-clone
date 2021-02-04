@@ -1,24 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { Segment, Comment, Loader } from 'semantic-ui-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Segment, Comment, } from 'semantic-ui-react';
 import firebase from "../../firebase";
+import { setUserPosts } from '../../redux/Channels/channelActions';
 import MessageForm from '../MessageForm/MessageForm';
 import MessagesHeader from '../MessagesHeader/MessagesHeader';
 import MapMessages from './MapMessages';
+import Skeleton from './Skeleton';
+import Typing from './Typing';
 
 function Messages() {
     const [messagesRef] = useState(firebase.database().ref("messages"));
     const [privateMessagesRef] = useState(firebase.database().ref("privateMessages"));
     const [messages, setMessages] = useState([]);
     const [numUniqueUsers, setNumUniqueUsers] = useState("");
+    const [nodeRef, setNodeRef] = useState("");
     const [messageLoading, setMessageLoading] = useState(true);
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResult, setSearchResult] = useState([]);
+    const [usersRef] = useState(firebase.database().ref("users"));
+    const [typingRef] = useState(firebase.database().ref("typing"));
+    const [isChannelStarred, setIsChannelStarred] = useState(false)
+    const [firstLoad, setFirstLoad] = useState(true);
+    const [typingUsers, setTypingUsers] = useState([]);
+
+    const dispatch = useDispatch()
     const user = useSelector(state=> state.user);
     const { currentUser } = user;
     const channel = useSelector(state=> state.channel);
     const { currentChannel, isPrivateChannel } = channel;
+
+    useEffect(() =>{
+        setFirstLoad(true)
+        setIsChannelStarred(false)
+    },[currentChannel])
 
     useEffect(() => {
         
@@ -38,26 +54,73 @@ function Messages() {
         const getMessagesRef = () => {
             return isPrivateChannel ? privateMessagesRef : messagesRef
         }
-        // Add messages Listener
-        if(currentUser && currentChannel){
-            const addListensers = (channelId) =>{
-                const ref = getMessagesRef();
 
-                ref.child(channelId).on("value", (snap) =>{
-                    if(snap.val() === undefined || snap.val() === null){
-                        setMessages([]);
-                        setMessageLoading(false);
-                    }else{
-                        setMessages(Object.values(snap.val()));
-                        setMessageLoading(false);
-                        
+        const countUserPosts = (messages) =>{
+            let userPosts = messages.reduce((acc, message)=>{
+                if(message.user.name in acc){
+                    acc[message.user.name].count += 1
+                }else{
+                    acc[message.user.name] ={
+                        avatar: message.user.avatar,
+                        count: 1
                     }
-                    countUniqueUsers(snap.val()? Object.values(snap.val()) : [])
-                })
-            }
-            addListensers(currentChannel.id)
+                }
+                return acc
+            },{})
+            dispatch(setUserPosts(userPosts))
         }
-    },[currentUser, currentChannel, messagesRef, isPrivateChannel, privateMessagesRef]);
+
+        // Add messages Listener
+        const addListensers = (channelId) =>{
+            const ref = getMessagesRef();
+
+            ref.child(channelId).on("value", (snap) =>{
+                if(snap.val() === undefined || snap.val() === null){
+                    setMessages([]);
+                    setMessageLoading(false);
+                }else{
+                    setMessages(Object.values(snap.val()));
+                    setMessageLoading(false);
+                    
+                }
+                countUniqueUsers(snap.val()? Object.values(snap.val()) : [])
+                countUserPosts(snap.val()? Object.values(snap.val()) : [])
+            })
+        }
+
+        const addUsersStarListener = (channelId, userId) => {
+            usersRef.child(userId).child('starred').once("value", (snap)=>{
+                if(snap.val() !== null) {
+                    const channelIds = Object.keys(snap.val());
+                    const prevStarred = channelIds.includes(channelId)
+                    setIsChannelStarred(prevStarred)
+                }
+            })
+        }
+
+        const addTypingListeners = channelId =>{
+            let typingUsers = [];
+            typingRef.child(channelId).on("value", snap=>{
+                if(snap.val()){
+                    typingUsers = Object.entries(snap.val()).filter((type)=> type[0] !== currentUser.uid).map(type =>{
+                        return {
+                            id: type[0],
+                            name: type[1]
+                        }
+                    })
+                    setTypingUsers(typingUsers)
+                }else{
+                    setTypingUsers([])
+                }
+            })
+        }
+
+        if(currentUser && currentChannel){
+            addListensers(currentChannel.id)
+            addTypingListeners(currentChannel.id)
+            addUsersStarListener(currentChannel.id, currentUser.uid)
+        }
+    },[currentUser, currentChannel, messagesRef, isPrivateChannel, privateMessagesRef, usersRef, dispatch, typingRef, nodeRef]);
 
     // Search messages
     useEffect(() =>{
@@ -79,6 +142,30 @@ function Messages() {
             handleSearchMessages()
         }
     },[messages, searchTerm]);
+
+
+    useEffect(()=>{
+        if(isChannelStarred && !firstLoad){
+            usersRef.child(`${currentUser.uid}/starred`).update({
+                [currentChannel.id]: {
+                    name: currentChannel.name,
+                    details: currentChannel.details,
+                    createdBy: {
+                        name: currentChannel.createdBy.name,
+                        avatar: currentChannel.createdBy.avatar
+                    }
+                }
+            })
+            setFirstLoad(true)
+        }else{
+            if(currentUser && currentChannel && !firstLoad){
+                        usersRef.child(`${currentUser.uid}/starred`).child(currentChannel.id).remove((err)=>{
+                            if(err) console.log(err)
+                        })
+                    
+            }
+            }
+    },[currentUser, currentChannel, isChannelStarred, usersRef, firstLoad])
     
 
     const handleSearchChange = (e) => {
@@ -91,6 +178,25 @@ function Messages() {
     const displayChannel = (channel) => {
         return channel ? `${isPrivateChannel ? `@` : `#`}${channel.name}` : ``
     }
+    const handleStar = () => {
+        setIsChannelStarred(isChannelStarred => !isChannelStarred)
+        setFirstLoad(false)
+    }
+    const displayTypingUsers = usersTyping => {
+        return usersTyping.length > 0 && usersTyping.map(user=>(
+            <div style={{ display: "flex", alignItems: "center", marginBottom:"0.2em"}} key={user.id} >
+                <span className="user__typing">{user.name} is typing</span> <Typing />
+            </div>
+        ))
+    }
+    useEffect(()=>{
+        const scrollToBottom = () => {
+            nodeRef.scrollIntoView({ behavior: "smooth" })
+        }
+        if(nodeRef){
+            scrollToBottom();
+        }
+    },[nodeRef, messages])
     return (
         <>
             <MessagesHeader 
@@ -98,11 +204,21 @@ function Messages() {
                 numUniqueUsers={numUniqueUsers}
                 handleSearchChange={handleSearchChange}
                 searchLoading={searchLoading}
+                handleStar={handleStar}
+                isChannelStarred={isChannelStarred}
             />
             <Segment>
                 <Comment.Group className="messages">
+                    {messageLoading && (
+                        <>
+                            {[...Array(10)].map((_,i)=>(
+                                <Skeleton key={i} />
+                            ))}
+                        </>
+                    )}
                     {searchTerm ? displayMessages(searchResult) : displayMessages(messages)}
-                    {messageLoading && <Loader active />}
+                    {displayTypingUsers(typingUsers)}
+                    <div ref={node => setNodeRef(node)} ></div>
                 </Comment.Group>
             </Segment>
             <MessageForm />

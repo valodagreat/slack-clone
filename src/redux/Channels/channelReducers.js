@@ -1,6 +1,6 @@
-import { SET_CURRENT_CHANNEL, SET_PRIVATE_CHANNEL } from "./channelTypes";
+import { SET_CURRENT_CHANNEL, SET_PRIVATE_CHANNEL, SET_USER_POSTS } from "./channelTypes";
 
-export const setChannelReducer = (state={ currentChannel: null, isPrivateChannel: false }, action) =>{
+export const setChannelReducer = (state={ currentChannel: null, isPrivateChannel: false, userPosts: null }, action) =>{
     switch(action.type){
         case SET_CURRENT_CHANNEL:
             return{
@@ -12,6 +12,11 @@ export const setChannelReducer = (state={ currentChannel: null, isPrivateChannel
                     ...state,
                     isPrivateChannel: action.payload.isPrivateChannel,
                 }
+        case SET_USER_POSTS:
+            return {
+                ...state,
+                userPosts: action.payload.userPosts
+            }
         default:
             return state
     }

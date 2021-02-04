@@ -8,6 +8,11 @@ import Register from './components/Register/Register';
 import firebase from './firebase';
 import { clearUser, setUser } from './redux/User/userActions';
 import Spinner from './components/Spinner/Spinner';
+import MobileHome from './components/MobileHome/MobileHome';
+import Messages from './components/Messages/Messages';
+import MetaPanel from './components/MetaPanel/MetaPanel';
+import MobileDMs from './components/MobileHome/MobileDMs';
+import MobileUserInfo from './components/MobileHome/MobileUserInfo';
 
 function App() {
 
@@ -27,12 +32,18 @@ function App() {
       }
     })
   }, [history, dispatch])
-  return isLoading ? <Spinner /> :(
+  return isLoading ? <Spinner /> : (
     
       <Switch>
         <Route exact path="/" >
-          <Home />
+          {
+            window.screen.width > 991 ? <Home /> :  <MobileHome />
+          }
         </Route>
+        <Route path="/messages" exact component={Messages} />
+        <Route path="/about-channel" exact component={MetaPanel} />
+        {window.screen.width <= 991 && <Route path="/direct-messages" exact component={MobileDMs} />}
+        {window.screen.width <= 991 && <Route path="/info" exact component={MobileUserInfo} />}
         <Route path="/login" exact component={Login} />
         <Route path="/register" exact component={Register} />
       </Switch>

@@ -3,6 +3,7 @@ import firebase from "../../firebase";
 import { useSelector, useDispatch } from 'react-redux';
 import { Button, Form, Icon, Input, Label, Menu, Message, Modal } from 'semantic-ui-react';
 import { setCurrentChannel, setPrivateChannel } from '../../redux/Channels/channelActions';
+import { useHistory } from 'react-router-dom';
 
 function Channels() {
     const [channels, setChannels ] = useState([]);
@@ -15,11 +16,14 @@ function Channels() {
     const [loading, setLoading] = useState(false)
     const [channelDetails, setChannelDetails] = useState("");
     const [channelRef] = useState(firebase.database().ref("channels"));
+    const [typingRef] = useState(firebase.database().ref("typing"));
     const [firstLoad, setFirstLoad] = useState(true);
     const [activeChannel, setActiveChannel] = useState("");
     
+    const {currentChannel} = useSelector(state=> state.channel);
 
     const dispatch = useDispatch()
+    const history = useHistory()
 
     /*useEffect(() => {
         let loadedChannels = [];
@@ -73,7 +77,7 @@ function Channels() {
             if(snap.val()){
                 setChannels(Object.values(snap.val()));
                 const firstChannel = channels[0]
-                if(firstLoad && channels.length>0){
+                if(firstLoad && channels.length>0 && window.screen.width > 991){
                     dispatch(setCurrentChannel(firstChannel))
                     setActiveChannel(firstChannel.id);
                     setFirstLoad(false)
@@ -195,6 +199,12 @@ function Channels() {
         dispatch(setPrivateChannel(false));
         clearNotifications()
         setChannel(channel)
+        if(currentChannel){
+            typingRef.child(currentChannel.id).child(currentUser.uid).remove()
+        }
+        if(window.screen.width < 991){
+            history.push('/messages')
+        }
     }
 
     return (

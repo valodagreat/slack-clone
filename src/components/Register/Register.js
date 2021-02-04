@@ -118,7 +118,7 @@ function Register() {
         return errors.some(error => error.message.toLowerCase().includes(input)) ? "error":""
     }
     return (
-        <Grid textAlign="center" verticalAlign="middle" className="app" >
+        <Grid textAlign="center" verticalAlign="middle" className="app" style={{ marginLeft: "auto", marginRight: "auto"}} >
             <Grid.Column style={{ maxWidth: 450 }} >
                 <Header as="h1" color="black" textAlign="center" >
                     <Image circular src='https://cdn.mos.cms.futurecdn.net/SDDw7CnuoUGax6x9mTo7dd.jpg' />slack 

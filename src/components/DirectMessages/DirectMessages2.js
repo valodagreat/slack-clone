@@ -1,7 +1,7 @@
 import React, { useState, useEffect}from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Icon, Menu } from 'semantic-ui-react';
-import firebase from "../../firebase"
+import firebase from "../../firebase";
 import { setCurrentChannel, setPrivateChannel } from '../../redux/Channels/channelActions';
 
 function DirectMessages() {

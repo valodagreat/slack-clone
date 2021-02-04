@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { withRouter } from 'react-router-dom';
 import { Icon, Menu } from 'semantic-ui-react';
 import firebase from "../../firebase";
 import { setCurrentChannel, setPrivateChannel } from '../../redux/Channels/channelActions';
+import DMwrap from './DMwrap';
 
-export class DirectMessages extends Component {
+export class DMs extends Component {
     state = {
         user: this.props.currentUser,
         channel: this.props.currentChannel,
@@ -87,22 +89,6 @@ export class DirectMessages extends Component {
         })
     }
 
-    changeChannel = user =>{
-        const channelId = this.getChannelId(user.uid);
-        const channelData = {
-            id: channelId,
-            name: user.name
-        }
-        this.props.setCurrentChannel(channelData);
-        this.props.setPrivateChannel(true)
-        this.setState({activeChannel: user.uid})
-    }
-
-    getChannelId = userId =>{
-        const { currentUser } = this.props
-        const currentUserId = currentUser.uid
-        return userId < currentUserId ? `${userId}/${currentUserId}` : `${currentUserId}/${userId}`
-    }
 
     /*const setActiveChannelId = (userId) => {
         setActiveChannel(userId)
@@ -111,7 +97,7 @@ export class DirectMessages extends Component {
     isUserOnline = (user) => user.status === "online"
 
     render() {
-        const { users, activeChannel } = this.state
+        const { users } = this.state
         return (
             <Menu.Menu className="menu">
                 <Menu.Item>
@@ -121,22 +107,11 @@ export class DirectMessages extends Component {
                     ({users?.length})
                 </Menu.Item>
                 {users?.map(user =>(
-                    <Menu.Item
-                        key={user.uid}
-                        active={user.uid === activeChannel}
-                        onClick={()=> this.changeChannel(user)}
-                        style={{ opacity: 0.7, fontStyle: "italic" }}
-                    >
-                        <Icon 
-                            name="circle"
-                            color={this.isUserOnline(user) ? "green" : "red"}
-                        />
-                        @{user.name}
-                    </Menu.Item>
+                    <DMwrap users={user} key={user.uid} />
                 ))}
             </Menu.Menu>
             )
     }
 }
 
-export default connect(null, { setCurrentChannel, setPrivateChannel } )(DirectMessages)
+export default withRouter(connect(null, { setCurrentChannel, setPrivateChannel } )(DMs))

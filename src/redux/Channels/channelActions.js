@@ -1,6 +1,6 @@
-import { SET_CURRENT_CHANNEL, SET_PRIVATE_CHANNEL } from "./channelTypes"
+import { SET_CURRENT_CHANNEL, SET_PRIVATE_CHANNEL, SET_USER_POSTS } from "./channelTypes"
 
-export const setCurrentChannel = (channel) => async(dispatch) => {
+export const setCurrentChannel = (channel) => async(dispatch, getState) => {
     try {
         dispatch({
             type: SET_CURRENT_CHANNEL,
@@ -8,21 +8,34 @@ export const setCurrentChannel = (channel) => async(dispatch) => {
                 currentChannel: channel
             }
         })
+        localStorage.setItem('currentChannel',JSON.stringify(getState().channel.currentChannel))
+    } catch (error) {
+        
+    }
+}
+
+export const setPrivateChannel = (isPrivateChannel) => {
+    try {
+        return {
+            type: SET_PRIVATE_CHANNEL,
+            payload: {
+                isPrivateChannel
+            }
+        }
         
     } catch (error) {
         
     }
 }
 
-export const setPrivateChannel = (isPrivateChannel) => async(dispatch) => {
+export const setUserPosts = (userPosts) => {
     try {
-        dispatch({
-            type: SET_PRIVATE_CHANNEL,
+        return {
+            type: SET_USER_POSTS,
             payload: {
-                isPrivateChannel
+                userPosts
             }
-        })
-        
+        }
     } catch (error) {
         
     }
